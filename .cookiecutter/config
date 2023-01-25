@@ -1,0 +1,5 @@
+# Change these at your peril:
+export PROJECT_NAME=asf_online_data_exploration
+export REPO_NAME=asf_online_data_exploration
+export DESCRIPTION=Exploratory data analysis of online data (Twitter, forums, news media, etc) to inform future ASF projects
+export PROJECT_OPENNESS=public
