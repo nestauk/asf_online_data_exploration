@@ -54,6 +54,7 @@ heating_technologies_ruleset_twitter = [
         "tag": "biomass_boilers",
     },
     {"value": '"solar thermal" OR "solar water heating"', "tag": "solar_thermal"},
+    {"value": '"heating system" OR "heating systems"', "tag": "heating_system"},
     {
         "value": '"district heating" OR "heat network" OR "heat networks"',
         "tag": "district_heating",
@@ -95,7 +96,7 @@ query_parameters_twitter = {
     "place.fields": "id,country,country_code,name,full_name,geo,place_type,contained_within",
     "media.fields": "media_key,type,url,duration_ms,preview_image_url,public_metrics,alt_text",
     "expansions": "author_id,geo.place_id,attachments.media_keys",
-    "max_results": 100,
+    "max_results": 100,  # number of results per page when making a call to the API
 }
 
 # -----THE GUARDIAN API DATA COLLECTION-----
@@ -135,6 +136,7 @@ heating_technologies_ruleset_guardian = [
     {"value": '"electric boiler" OR "electric boilers"', "tag": "electric_boilers"},
     {"value": '"biomass boiler" OR "biomass boilers"', "tag": "biomass_boilers"},
     {"value": '"solar thermal" OR "solar water heating"', "tag": "solar_thermal"},
+    {"value": '"heating system" OR "heating systems"', "tag": "heating_system"},
     {
         "value": '"district heating" OR "heat network" OR "heat networks"',
         "tag": "district_heating",
@@ -165,14 +167,16 @@ heating_technologies_ruleset_guardian = [
         "tag": "microgeneration_certification_scheme",
     },
     {
-        "value": '"hp cost estimator" OR "hp cost calculator" OR (hp AND cost (estimate OR estimator OR calculator OR tool) AND nesta)',
+        "value": '"hp cost estimator" OR "hp cost calculator" OR (hp AND cost AND (estimate OR estimator OR calculator OR tool) AND nesta)',
         "tag": "nesta_cost_estimator_tool",
     },
 ]
 
 query_parameters_guardian = {
-    "page-size": 100,
-    "use-date": "published",
+    "page-size": 100,  # number of results per page when making a call to the API
+    "use-date": "published",  # if collecting data for a specific date, uses date published (other options here: https://open-platform.theguardian.com/documentation/search)
+    "query-fields": "trailText,headline,body",  # specifies in which fields query terms should be searched on
+    "show-fields": "all",  # fields to collect data on
 }
 
 dates_for_guardian_collection = []

@@ -1,5 +1,7 @@
 """
 Script to collect data from The Guardian Open Platform on a topic of choice using the content endpoint.
+
+A developer is allowed to make up to 500 calls per day and 1 call per second.
 """
 
 import requests
@@ -65,8 +67,9 @@ def connect_to_endpoint(endpoint_url: str) -> json:
         )
         time.sleep(sleep_seconds)
         return connect_to_endpoint(endpoint_url)
-    time.sleep(0.5)
-    return response.json()
+    # sleep 1 second not to surpass rate limit
+    time.sleep(1)
+    return response.json()["response"]
 
 
 def collect_and_process_guardian_data(
@@ -96,11 +99,11 @@ def collect_and_process_guardian_data(
 
         # Collecting and processing data
         json_response = connect_to_endpoint(endpoint_url)
-        data = json_response["response"]["results"]
+        data = json_response["results"]
 
         # Extracting parameters from json response
-        total_pages = json_response["response"]["pages"]
-        current_page = json_response["response"]["currentPage"]  # this should be 1
+        total_pages = json_response["pages"]
+        current_page = json_response["currentPage"]  # this should be 1
 
         # Define a filename and uploading data to s3
         if specified_time_frame_flag:
@@ -117,10 +120,12 @@ def collect_and_process_guardian_data(
 
             # Collecting and processing data
             json_response = connect_to_endpoint(endpoint_url)
-            data = data + json_response["response"]["results"]
+            data = data + json_response["results"]
 
             # Uploading to S3
             dictionary_to_s3(data, s3_bucket, s3_folder, filename)
+
+            current_page += 1
 
         # Removing page from query_params for next rule's collection to start at page 1
         query_params.pop("page", None)
