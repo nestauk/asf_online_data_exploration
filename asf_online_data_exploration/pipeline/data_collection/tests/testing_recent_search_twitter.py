@@ -1,10 +1,16 @@
 """
 Script to test the data collection pipeline for Twitter's recent search endpoint.
 
-We collect data from the API twice (program sleeps for 3 minutes in between) for two different rules
-to check if the there are any common tweet IDs in the files for the same rule (there shouldn't be).
+Data is collected from the API twice (program sleeps for 3 minutes in between) for two different rules.
+Then the following checks are performed:
+- if no repeated tweets are collected (for the same tag, at different times).
+
+Not being checked and why:
+- Not checking if all expected variables are present, as these might not be present if all values are missing
+(e.g. one might want to collect geolocation parameters, but geolocation is always missing, the 'geo' field won't be retrieved)
 """
 
+import pytest
 from asf_online_data_exploration.pipeline.data_collection.recent_search_twitter import (
     collect_and_process_twitter_data,
 )
@@ -20,8 +26,12 @@ import time
 S3_BUCKET = "asf-online-data-exploration"
 DATA_COLLECTION_FOLDER = "inputs/data_collection/recent_search_twitter/test/"
 
-if __name__ == "__main__":
-    print("Collecting Twitter data...")
+
+def test_data_collected_from_api():
+    """
+    Tests data collected from Twitter's API v2:
+    - if no repeated tweets are collected (for the same tag, at different times)
+    """
 
     test_ruleset_twitter = [
         {
@@ -42,8 +52,9 @@ if __name__ == "__main__":
         s3_bucket=S3_BUCKET,
         s3_folder=DATA_COLLECTION_FOLDER,
     )
-    print("Sleeping 3 min between data collections.")
-    time.sleep(60 * 3)
+
+    time.sleep(60 * 3)  # Sleeping 3 min between data collections
+
     collect_and_process_twitter_data(
         bearer_token=os.environ.get("BEARER_TOKEN"),
         rules=test_ruleset_twitter,
@@ -52,12 +63,7 @@ if __name__ == "__main__":
         s3_folder=DATA_COLLECTION_FOLDER,
     )
 
-    print(
-        f"Twitter data collected. You can find the files on S3 -> bucket: {S3_BUCKET}, folder: {DATA_COLLECTION_FOLDER}"
-    )
-
-    print("Let's check if IDs are unique...")
-
+    # Let's check if IDs are unique
     s3_resource = boto3.resource("s3")
     bucket = s3_resource.Bucket(S3_BUCKET)
 
@@ -78,14 +84,7 @@ if __name__ == "__main__":
         file_2 = read_json_from_s3(S3_BUCKET, files_tag[1])
         file_2 = pd.DataFrame(file_2["data"])
 
-        no_problem = True
         # check if there are IDs in common in the two data collection instances
         if (len(file_1) != 0) and (len(file_2) != 0):
             ids_intersection = set(file_1["id"]).intersection(file_2["id"])
-            if len(ids_intersection) > 0:
-                print(
-                    f"Problem! Files with data collected for tag {tag} have IDs in common."
-                )
-                no_problem = False
-        if no_problem:
-            print("All tests passed!")
+            assert len(ids_intersection) == 0
