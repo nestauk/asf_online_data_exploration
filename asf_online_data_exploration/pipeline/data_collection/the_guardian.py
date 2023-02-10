@@ -88,9 +88,9 @@ def collect_and_process_guardian_data(
     specified_time_frame_flag = "from-date" in query_params
 
     # data collection for every possible rule
-    for i in range(len(rules)):
-        query_params["q"] = rules[i]["value"]
-        query_tag = rules[i]["tag"]
+    for rule in rules:
+        query_params["q"] = rule["value"]
+        query_tag = rule["tag"]
 
         endpoint_url = define_endpoint_url(api_key, query_params)
 
