@@ -1,6 +1,7 @@
 """
 Script with parameters for data collection.
 """
+import re
 
 # -----TWITTER DATA COLLECTION-----
 
@@ -34,24 +35,33 @@ heating_technologies_ruleset_twitter = [
         "tag": "heat_pump_others",
     },
     {
-        "value": '"gas boiler" OR "gas boilers" OR #gasboiler OR #gasboilers',
-        "tag": "gas_boilers",
+        "value": '(boiler OR boilers OR #boiler OR #boilers) -("boiler suit" OR "boiler suits")',
+        "tag": "general_boilers",
+    },
+    {"value": "#combiboiler OR #combiboilers", "tag": "hashtag_combi_boilers"},
+    {
+        "value": "#gasboiler OR #gasboilers",
+        "tag": "hashtag_gas_boilers",
     },
     {
-        "value": '"oil boiler" OR "oil boilers" OR #oilboiler OR #oilboilers',
-        "tag": "oil_boilers",
+        "value": "#oilboiler OR #oilboilers",
+        "tag": "hashtag_oil_boilers",
     },
     {
-        "value": '"hydrogen boiler" OR "hydrogen boilers" OR "h2 boiler" OR "h2 boilers" OR #hydrogenboiler OR #hydrogenboiler OR #h2boiler OR #h2boilers',
-        "tag": "hydrogen_boilers",
+        "value": "#hydrogenboiler OR #hydrogenboiler OR #h2boiler OR #h2boilers",
+        "tag": "hashtag_hydrogen_boilers",
     },
     {
-        "value": '"electric boiler" OR "electric boilers" OR #electricboiler OR #electricboilers',
-        "tag": "electric_boilers",
+        "value": "#electricboiler OR #electricboilers",
+        "tag": "hashtag_electric_boilers",
     },
     {
-        "value": '"biomass boiler" OR "biomass boilers" OR #biomassboiler OR #biomassboilers',
-        "tag": "biomass_boilers",
+        "value": "#biomassboiler OR #biomassboilers",
+        "tag": "hashtag_biomass_boilers",
+    },
+    {
+        "value": '"electric heating" OR "electric radiator" OR "electric radiators" OR "central heating"',
+        "tag": "heating_others",
     },
     {"value": '"solar thermal" OR "solar water heating"', "tag": "solar_thermal"},
     {"value": '"heating system" OR "heating systems"', "tag": "heating_system"},
@@ -100,77 +110,19 @@ query_parameters_twitter = {
 }
 
 # -----THE GUARDIAN API DATA COLLECTION-----
-
 heating_technologies_ruleset_guardian = [
-    {"value": '"heat pump" OR "heat pumps"', "tag": "general_heat_pumps"},
-    {
-        "value": '"air source hp" OR "air source hps" OR "air-source hp" OR "air-source hps"',
-        "tag": "ashp",
-    },
-    {
-        "value": '"ground source hp" OR "ground source hps" OR "ground-source hp" OR "ground-source hps"',
-        "tag": "gshp",
-    },
-    {
-        "value": '"water source hp" OR "water source hps" OR "water-source hp" OR "water-source hps"',
-        "tag": "wshp",
-    },
-    {
-        "value": '"air to air hp" OR "air to air hps" OR "air-to-air hp" OR "air-to-air hps" OR "air2air hp" OR "air2air hps" OR "a2a hp" OR "a2a hps"',
-        "tag": "atahp",
-    },
-    {
-        "value": '"air to water hp" OR "air to water hps" OR "air-to-water hp" OR "air-to-water hps" OR "air2water hps" OR "air2water hp" OR "a2w hp" OR "a2w hps"',
-        "tag": "atwhp",
-    },
-    {
-        "value": '"hybrid hp" OR "hybrid hps" OR "bivalent hp" OR "bivalent hps" OR "warm air hp" OR "warm air hps"',
-        "tag": "heat_pump_others",
-    },
-    {"value": '"gas boiler" OR "gas boilers"', "tag": "gas_boilers"},
-    {"value": '"oil boiler" OR "oil boilers"', "tag": "oil_boilers"},
-    {
-        "value": '"hydrogen boiler" OR "hydrogen boilers" OR "h2 boiler" OR "h2 boilers"',
-        "tag": "hydrogen_boilers",
-    },
-    {"value": '"electric boiler" OR "electric boilers"', "tag": "electric_boilers"},
-    {"value": '"biomass boiler" OR "biomass boilers"', "tag": "biomass_boilers"},
-    {"value": '"solar thermal" OR "solar water heating"', "tag": "solar_thermal"},
-    {"value": '"heating system" OR "heating systems"', "tag": "heating_system"},
-    {
-        "value": '"district heating" OR "heat network" OR "heat networks"',
-        "tag": "district_heating",
-    },
-    {"value": '"hybrid heating"', "tag": "hybrid_heating"},
-    {
-        "value": '"hp installation" OR "hp installations" OR "hybrid installation" OR "hybrid installations" OR "hybrid heating installation" OR "hybrid heating installations"',
-        "tag": "installations",
-    },
-    {
-        "value": '"hp installer" OR "hp installers" OR "hp engineer" OR "hp engineers" OR "heating engineer" OR "heating engineers" OR "boiler engineer" OR "boiler engineers"',
-        "tag": "installers_and_engineers",
-    },
-    {
-        "value": '"retrofit installer" OR "retrofit installers" OR "renewables installer" OR "renewables installers"',
-        "tag": "retrofit_or_renewable_installers",
-    },
-    {
-        "value": '"low carbon heating" OR "low-carbon heating" OR "home decarbonisation"',
-        "tag": "low_carbon_heating_and_home_decarbonisation",
-    },
-    {
-        "value": '"bus scheme" OR "boiler upgrade scheme" OR "renewable heat incentive" OR "domestic rhi" OR "clean heat grant" OR "home energy scotland grant" OR "home energy scotland loan" OR "home energy scotland scheme"',
-        "tag": "government_grants",
-    },
-    {
-        "value": '"microgeneration certification scheme" OR "mcs certified" OR "mcs certification" OR "mcs installation" OR "mcs installations"',
-        "tag": "microgeneration_certification_scheme",
-    },
+    {"value": re.sub(" OR #[a-z0-9]+", "", item["value"]), "tag": item["tag"]}
+    for item in heating_technologies_ruleset_twitter
+    if (
+        item["tag"] != "nesta_cost_estimator_tool" and not item["value"].startswith("#")
+    )
+]
+heating_technologies_ruleset_guardian.append(
     {
         "value": '"hp cost estimator" OR "hp cost calculator" OR (hp AND cost AND (estimate OR estimator OR calculator OR tool) AND nesta)',
         "tag": "nesta_cost_estimator_tool",
-    },
-]
+    }
+)
 
 query_parameters_guardian = {
     "page-size": 100,  # number of results per page when making a call to the API
