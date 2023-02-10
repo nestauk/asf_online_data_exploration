@@ -8,7 +8,9 @@ The `recent_search_twitter.py` script contains the pipeline for collecting Twitt
 
 Running `asf_online_data_exploration/pipeline/data_collection/recent_search_twitter.py` will collect data from the past 7 days on a set of parameters that can be found under `asf_online_data_exploration/config/data_collection_parameters.py`. Data is stored to the `asf-online-data-exploration` S3 bucket.
 
-Alternatively, to perform your own data collection create a script with the following code
+Alternatively, to perform your own data collection create a script with the following code:
+
+_If you want to store data on an S3 bucket of your choice:_
 
 ```
 from asf_online_data_exploration.pipeline.data_collection.recent_search_twitter import (
@@ -25,7 +27,26 @@ collect_and_process_twitter_data(
         rules=ruleset,
         query_params=query_parameters_twitter,
         s3_bucket=S3_BUCKET,
-        s3_folder=DATA_COLLECTION_FOLDER,
+        folder=DATA_COLLECTION_FOLDER,
+    )
+```
+
+_If you want to store data locally:_
+
+```
+from asf_online_data_exploration.pipeline.data_collection.recent_search_twitter import (
+    collect_and_process_twitter_data,
+)
+
+ruleset = [{"value": ..., "tag": ...}]
+query_parameters_twitter = [...]
+DATA_COLLECTION_FOLDER = "data_collection/tweets/" # will store data under inputs/data_collection/tweets/
+
+collect_and_process_twitter_data(
+        bearer_token=os.environ.get("BEARER_TOKEN"),
+        rules=ruleset,
+        query_params=query_parameters_twitter,
+        folder=DATA_COLLECTION_FOLDER,
     )
 ```
 
@@ -35,7 +56,9 @@ The `the_guardian.py` script contains the pipeline for collecting news articles 
 
 Running `asf_online_data_exploration/pipeline/data_collection/the_guardian.py` will collect news articles on a set of parameters that can be found under `asf_online_data_exploration/config/data_collection_parameters.py`. Data is stored to the `asf-online-data-exploration` S3 bucket.
 
-Alternatively, to perform your own data collection create a script with the following code
+Alternatively, to perform your own data collection create a script with the following code.
+
+_If you want to store data on an S3 bucket of your choice:_
 
 ```
 from asf_online_data_exploration.pipeline.data_collection.the_guardian import (
@@ -53,7 +76,29 @@ collect_and_process_guardian_data(
         rules=ruleset,
         query_params=query_parameters_guardian,
         s3_bucket=S3_BUCKET,
-        s3_folder=DATA_COLLECTION_FOLDER,
+        folder=DATA_COLLECTION_FOLDER,
+    )
+
+```
+
+_If you want to store data locally:_
+
+```
+from asf_online_data_exploration.pipeline.data_collection.the_guardian import (
+    collect_and_process_guardian_data,
+)
+
+api_key = ...
+ruleset = [{"value": ..., "tag": ...}]
+query_parameters_guardian = []
+DATA_COLLECTION_FOLDER = "data_collection/the_guardian_news" # will store data under inputs/data_collection/the_guardian_news/
+
+collect_and_process_guardian_data(
+        api_key=api_key,
+        rules=ruleset,
+        query_params=query_parameters_guardian,
+        s3_bucket=S3_BUCKET,
+        folder=DATA_COLLECTION_FOLDER,
     )
 ```
 
