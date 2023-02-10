@@ -11,7 +11,7 @@ Running `asf_online_data_exploration/pipeline/data_collection/recent_search_twit
 Alternatively, to perform your own data collection create a script with the following code
 
 ```
-from asf_online_data_exploration.pipeline.data_collection.the_guardian import (
+from asf_online_data_exploration.pipeline.data_collection.recent_search_twitter import (
     collect_and_process_twitter_data,
 )
 
