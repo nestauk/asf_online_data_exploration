@@ -131,11 +131,11 @@ def collect_and_process_guardian_data(
 if __name__ == "__main__":
     guardian_api_key = os.environ.get("GUARDIAN_API_KEY")
 
-    for i in range(len(dates_for_guardian_collection)):
-        query_parameters_guardian["from-date"] = dates_for_guardian_collection[i][
+    for date in dates_for_guardian_collection:
+        query_parameters_guardian["from-date"] = date[
             "from-date"
         ]
-        query_parameters_guardian["to-date"] = dates_for_guardian_collection[i][
+        query_parameters_guardian["to-date"] = date[
             "to-date"
         ]
 
