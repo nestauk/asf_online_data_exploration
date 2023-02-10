@@ -83,12 +83,9 @@ def collect_and_process_guardian_data(
         rules: rules for collecting Twitter data. Each rules should contain "value" and "tag" keys
         query_paramers: parameters for data collection
     """
-    if ("from-date" in query_params.keys()) and ("from-date" in query_params.keys()):
-        from_date = query_params["from-date"].replace("/", "_")
-        to_date = query_params["to-date"].replace("/", "_")
-        specified_time_frame_flag = True
-    else:
-        specified_time_frame_flag = False
+    from_date = query_params.get("from-date", "").replace("/", "_") 
+    to_date = query_params.get("to-date", "").replace("/", "_") 
+    specified_time_frame_flag = "from-date" in query_params
 
     # data collection for every possible rule
     for i in range(len(rules)):
