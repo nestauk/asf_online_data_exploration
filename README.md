@@ -11,7 +11,7 @@ Our [data collection pipeline](https://github.com/nestauk/asf_online_data_explor
 Both require access to developer credentials:
 
 - [Apply for Twitter Developer credentials](https://developer.twitter.com/en/portal/petition/essential/basic-info);
-- [Apply for The Guardian Open Platform credentials](<(https://open-platform.theguardian.com/access/)>).
+- [Apply for The Guardian Open Platform credentials](https://open-platform.theguardian.com/access/).
 
 ## Processing
 
