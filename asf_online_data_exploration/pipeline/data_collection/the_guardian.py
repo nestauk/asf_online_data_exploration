@@ -5,10 +5,8 @@ A developer is allowed to make up to 500 calls per day and 1 call per second.
 """
 
 import requests
-import json
 import time
 import random
-import json
 import os
 from datetime import datetime
 from asf_online_data_exploration.config.data_collection_parameters import (
@@ -16,16 +14,20 @@ from asf_online_data_exploration.config.data_collection_parameters import (
     query_parameters_guardian,
     dates_for_guardian_collection,
 )
-from asf_online_data_exploration.utils.data_collection_utils import dictionary_to_s3
+from asf_online_data_exploration.utils.data_collection_utils import (
+    dictionary_to_s3,
+    save_json_to_local_inputs_folder,
+)
+from asf_online_data_exploration import base_config
 
 ENDPOINT_URL = "https://content.guardianapis.com/search?"
-S3_BUCKET = "asf-online-data-exploration"
-DATA_COLLECTION_FOLDER = "inputs/data_collection/the_guardian/"
+S3_BUCKET = base_config["S3_BUCKET"]
+DATA_COLLECTION_FOLDER = base_config["THE_GUARDIAN_S3_DATA_COLLECTION_FOLDER"]
 
 
-def define_endpoint_url(api_key, query_params):
+def define_endpoint_url(api_key, query_params) -> str:
     """
-    Defines endpoint url starting from the base content endpoint URL and
+    Defines endpoint URL starting from the base content endpoint URL and
     using the api_key and query parameters.
     Args:
         api_key: API key credentials
@@ -39,7 +41,7 @@ def define_endpoint_url(api_key, query_params):
     return url
 
 
-def connect_to_endpoint(endpoint_url: str) -> json:
+def connect_to_endpoint(endpoint_url: str) -> dict:
     """
     Connects to the endpoint and requests data.
     Returns a json with The Guardian data if a 200 status code is yielded.
@@ -48,6 +50,8 @@ def connect_to_endpoint(endpoint_url: str) -> json:
 
     Args:
         endpoint_url: url to endpoint
+    Returns:
+        Dictionary with json response from API call.
     """
     response = requests.request("GET", url=endpoint_url)
     response_status_code = response.status_code
@@ -73,7 +77,11 @@ def connect_to_endpoint(endpoint_url: str) -> json:
 
 
 def collect_and_process_guardian_data(
-    api_key, rules, query_params, s3_bucket: str, s3_folder: str
+    api_key,
+    rules,
+    query_params,
+    folder: str,
+    s3_bucket: str = None,
 ):
     """
     Collects, processes and saves The Guardian data following a set of rules and query parameters.
@@ -82,10 +90,14 @@ def collect_and_process_guardian_data(
         api_key: API key credentials
         rules: rules for collecting Twitter data. Each rules should contain "value" and "tag" keys
         query_paramers: parameters for data collection
+        folder: path to folder where results are stored (within an S3 bucket or within the local inputs/ folder)
+        s3_bucket: s3 bucket where results are stored (if None, results are saved locally)
     """
-    from_date = query_params.get("from-date", "").replace("/", "_") 
-    to_date = query_params.get("to-date", "").replace("/", "_") 
-    specified_time_frame_flag = "from-date" in query_params
+    from_date = query_params.get("from-date", "").replace("/", "_")
+    to_date = query_params.get("to-date", "").replace("/", "_")
+    specified_time_frame_flag = ("from-date" in query_params) or (
+        "to-date" in query_params
+    )
 
     # data collection for every possible rule
     for rule in rules:
@@ -102,13 +114,6 @@ def collect_and_process_guardian_data(
         total_pages = json_response["pages"]
         current_page = json_response["currentPage"]  # this should be 1
 
-        # Define a filename and uploading data to s3
-        if specified_time_frame_flag:
-            filename = f"guardian_{query_tag}_S{from_date}F{to_date}.json"
-        else:
-            filename = f"guardian_{query_tag}_{datetime.now()}.json"
-        dictionary_to_s3(data, s3_bucket, s3_folder, filename)
-
         current_page += 1
         while current_page <= total_pages:
             # Adding the current page to the query parameters
@@ -119,10 +124,18 @@ def collect_and_process_guardian_data(
             json_response = connect_to_endpoint(endpoint_url)
             data = data + json_response["results"]
 
-            # Uploading to S3
-            dictionary_to_s3(data, s3_bucket, s3_folder, filename)
-
             current_page += 1
+
+        # Define a filename and uploading data to s3
+        if specified_time_frame_flag:
+            filename = f"guardian_{query_tag}_S{from_date}F{to_date}.json"
+        else:
+            filename = f"guardian_{query_tag}_{datetime.now()}.json"
+
+        if s3_bucket is not None:
+            dictionary_to_s3(data, s3_bucket, folder, filename)
+        else:
+            save_json_to_local_inputs_folder(data, folder, filename)
 
         # Removing page from query_params for next rule's collection to start at page 1
         query_params.pop("page", None)
@@ -132,17 +145,13 @@ if __name__ == "__main__":
     guardian_api_key = os.environ.get("GUARDIAN_API_KEY")
 
     for date in dates_for_guardian_collection:
-        query_parameters_guardian["from-date"] = date[
-            "from-date"
-        ]
-        query_parameters_guardian["to-date"] = date[
-            "to-date"
-        ]
+        query_parameters_guardian["from-date"] = date["from-date"]
+        query_parameters_guardian["to-date"] = date["to-date"]
 
         collect_and_process_guardian_data(
-            guardian_api_key,
-            heating_technologies_ruleset_guardian,
-            query_parameters_guardian,
-            S3_BUCKET,
-            DATA_COLLECTION_FOLDER,
+            api_key=guardian_api_key,
+            rules=heating_technologies_ruleset_guardian,
+            query_params=query_parameters_guardian,
+            folder=DATA_COLLECTION_FOLDER,
+            s3_bucket=S3_BUCKET,
         )

@@ -4,11 +4,9 @@ If data on a specific ruleset has been collected sometime in the past 7 days, on
 """
 
 import requests
-import json
 import time
 import random
 import boto3
-import json
 from datetime import datetime, timedelta
 import pandas as pd
 import os
@@ -19,11 +17,14 @@ from asf_online_data_exploration.config.data_collection_parameters import (
 from asf_online_data_exploration.utils.data_collection_utils import (
     dictionary_to_s3,
     read_json_from_s3,
+    save_json_to_local_inputs_folder,
+    read_json_from_local_path,
 )
+from asf_online_data_exploration import base_config, PROJECT_DIR
 
 ENDPOINT_URL = "https://api.twitter.com/2/tweets/search/recent"
-S3_BUCKET = "asf-online-data-exploration"
-DATA_COLLECTION_FOLDER = "inputs/data_collection/recent_search_twitter/"
+S3_BUCKET = base_config["S3_BUCKET"]
+DATA_COLLECTION_FOLDER = base_config["RECENT_SEARCH_TWITTER_S3_DATA_COLLECTION_FOLDER"]
 
 
 def request_headers(bearer_token: str) -> dict:
@@ -37,7 +38,7 @@ def request_headers(bearer_token: str) -> dict:
     return {"Authorization": "Bearer {}".format(bearer_token)}
 
 
-def connect_to_endpoint(headers: dict, parameters: dict) -> json:
+def connect_to_endpoint(headers: dict, parameters: dict) -> dict:
     """
     Connects to the endpoint and requests data.
     Returns a json with Twitter data if a 200 status code is yielded.
@@ -47,6 +48,8 @@ def connect_to_endpoint(headers: dict, parameters: dict) -> json:
     Args:
         headers: request headers
         parameters: query parameters
+    Returns:
+        Dictionary with json response from API call.
     """
 
     response = requests.request(
@@ -74,7 +77,7 @@ def connect_to_endpoint(headers: dict, parameters: dict) -> json:
     return response.json()
 
 
-def process_twitter_data(json_response: json, data: list) -> list:
+def process_twitter_data(json_response: dict, data: list) -> list:
     """
     Processes new Twitter data.
 
@@ -120,31 +123,38 @@ def empty_data_dict() -> dict:
     return data
 
 
-def get_max_ids_json(s3_bucket, s3_folder) -> dict:
+def get_max_ids_json(s3_bucket, folder) -> dict:
     """
-    Gets max_tweet_id.json file from S3 if it exists. Otherwise, it creates one.
+    Gets max_tweet_id.json file if it exists. Otherwise, it creates one.
     This file contains information about the latest tweet ID collected for a specific
     rule.
     Arg:
-        s3_bucket: name of S3 bucket where file is stored
-        s3_folder: folder where file is stored within the S3 bucket
+        s3_bucket: name of S3 bucket where file is stored (if None, then search in local inputs/folder)
+        folder: folder where file is stored (within the S3 bucket or the local inputs/ folder)
     Returns:
         Dictionary with latest tweet IDs collected so far.
     """
-    # Connecting to s3
-    s3_resource = boto3.resource("s3")
-    bucket = s3_resource.Bucket(s3_bucket)
+    if s3_bucket is None:  # search for file in local inputs folder
+        local_path = os.path.join(PROJECT_DIR / "inputs/", folder)
+        file_path = os.path.join(local_path, "max_tweet_id.json")
+        if os.path.exists(file_path):
+            max_ids_json = read_json_from_local_path(file_path)
+        else:
+            max_ids_json = dict()
+    else:  # search for file in S3
+        # Connecting to s3
+        s3_resource = boto3.resource("s3")
+        bucket = s3_resource.Bucket(s3_bucket)
 
-    # Check if we already have a json with information about previous data collections
-    data_collection_json = [
-        objects.key for objects in bucket.objects.filter(Prefix=s3_folder)
-    ]
-    if f"{s3_folder}max_tweet_id.json" in data_collection_json:
-        max_ids_json = read_json_from_s3(
-            s3_bucket, file_path=f"{s3_folder}max_tweet_id.json"
-        )
-    else:  # if not, we create one
-        max_ids_json = dict()
+        # Check if we already have a json with information about previous data collections
+        data_collection_json = [
+            objects.key for objects in bucket.objects.filter(Prefix=folder)
+        ]
+        file_path = os.path.join(folder, "max_tweet_id.json")
+        if file_path in data_collection_json:
+            max_ids_json = read_json_from_s3(s3_bucket, file_path=file_path)
+        else:  # if not, we create one
+            max_ids_json = dict()
 
     return max_ids_json
 
@@ -178,7 +188,11 @@ def update_max_ids_json(
 
 
 def collect_and_process_twitter_data(
-    bearer_token: str, rules: list, query_params: dict, s3_bucket: str, s3_folder: str
+    bearer_token: str,
+    rules: list,
+    query_params: dict,
+    folder: str,
+    s3_bucket: str = None,
 ):
     """
     Collects, processes and saves twitter data following a set of rules and query parameters.
@@ -190,6 +204,8 @@ def collect_and_process_twitter_data(
         bearer_token: Twitter bearer token credentials
         rules: rules for collecting Twitter data. Each rules should contain "value" and "tag" keys
         query_paramers: parameters for data collection
+        folder: path to folder where results are stored (within an S3 bucket or within the local inputs/ folder)
+        s3_bucket: s3 bucket where results are stored (if None, results are saved locally)
     """
 
     # Authentication with bearer token
@@ -199,7 +215,7 @@ def collect_and_process_twitter_data(
     date_time_collection_start = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
 
     # Getting info about latest collected tweets
-    max_ids_json = get_max_ids_json(s3_bucket, s3_folder)
+    max_ids_json = get_max_ids_json(s3_bucket, folder)
 
     # data collection for every possible rule
     for i in range(len(rules)):
@@ -227,10 +243,6 @@ def collect_and_process_twitter_data(
         json_response = connect_to_endpoint(headers, query_params)
         data = process_twitter_data(json_response, data)
 
-        # Define a filename and uploading data to s3
-        filename = f"recent_search_{query_tag}_{date_time_collection_start}.json"
-        dictionary_to_s3(data, s3_bucket, s3_folder, filename)
-
         # updating json with info about max tweet id collected, to be used next time we collect data
         # note that first page of tweets contains the newest possible tweets
         if "newest_id" in json_response["meta"].keys():
@@ -246,11 +258,16 @@ def collect_and_process_twitter_data(
             json_response = connect_to_endpoint(headers, query_params)
             data = process_twitter_data(json_response, data)
 
-            # Uploading to S3
-            dictionary_to_s3(data, s3_bucket, s3_folder, filename)
+        # Defining a file name before storing the data
+        filename = f"recent_search_{query_tag}_{date_time_collection_start}.json"
 
-        # Saving max_tweet_id.json to s3 after finishing data collection for the current rule
-        dictionary_to_s3(max_ids_json, s3_bucket, s3_folder, "max_tweet_id.json")
+        # Saving data and max tweet id information to S3 or local folder
+        if s3_bucket is None:
+            save_json_to_local_inputs_folder(data, folder, filename)
+            save_json_to_local_inputs_folder(max_ids_json, folder, "max_tweet_id.json")
+        else:
+            dictionary_to_s3(data, s3_bucket, folder, filename)
+            dictionary_to_s3(max_ids_json, s3_bucket, folder, "max_tweet_id.json")
 
         # Removing these from query parameters before collecting data for next rule
         for key in ["query", "since_id"]:
@@ -264,6 +281,6 @@ if __name__ == "__main__":
         bearer_token=bearer_token,
         rules=heating_technologies_ruleset_twitter,
         query_params=query_parameters_twitter,
+        folder=DATA_COLLECTION_FOLDER,
         s3_bucket=S3_BUCKET,
-        s3_folder=DATA_COLLECTION_FOLDER,
     )
