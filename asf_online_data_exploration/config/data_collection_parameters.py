@@ -38,26 +38,33 @@ heating_technologies_ruleset_twitter = [
         "value": '(boiler OR boilers OR #boiler OR #boilers) -("boiler suit" OR "boiler suits")',
         "tag": "general_boilers",
     },
-    {"value": "#combiboiler OR #combiboilers", "tag": "hashtag_combi_boilers"},
     {
-        "value": "#gasboiler OR #gasboilers",
-        "tag": "hashtag_gas_boilers",
+        "value": '"combi boiler" OR "combi boilers" OR "combi-boiler" OR "combi-boilers" OR #combiboiler OR #combiboilers',
+        "tag": "combi_boilers",
     },
     {
-        "value": "#oilboiler OR #oilboilers",
-        "tag": "hashtag_oil_boilers",
+        "value": '"gas boiler" OR "gas boilers" OR #gasboiler OR #gasboilers',
+        "tag": "gas_boilers",
     },
     {
-        "value": "#hydrogenboiler OR #hydrogenboiler OR #h2boiler OR #h2boilers",
-        "tag": "hashtag_hydrogen_boilers",
+        "value": '"oil boiler" OR "oil boilers" OR #oilboiler OR #oilboilers',
+        "tag": "oil_boilers",
     },
     {
-        "value": "#electricboiler OR #electricboilers",
-        "tag": "hashtag_electric_boilers",
+        "value": '"hydrogen boiler" OR "hydrogen boilers" OR #hydrogenboiler OR #hydrogenboiler OR #h2boiler OR #h2boilers',
+        "tag": "hydrogen_boilers",
     },
     {
-        "value": "#biomassboiler OR #biomassboilers",
-        "tag": "hashtag_biomass_boilers",
+        "value": '"hydrogen ready boiler" OR "hydrogen ready boilers" OR "hydrogen-ready boiler" OR "hydrogen-ready boilers"',
+        "tag": "hydrogen_ready_boilers",
+    },
+    {
+        "value": '"electric boiler" OR "electric boilers" OR #electricboiler OR #electricboilers',
+        "tag": "electric_boilers",
+    },
+    {
+        "value": '"biomass boiler" OR "biomass boilers" OR #biomassboiler OR #biomassboilers',
+        "tag": "biomass_boilers",
     },
     {
         "value": '"electric heating" OR "electric radiator" OR "electric radiators" OR "central heating"',
@@ -113,9 +120,11 @@ query_parameters_twitter = {
 heating_technologies_ruleset_guardian = [
     {"value": re.sub(" OR #[a-z0-9]+", "", item["value"]), "tag": item["tag"]}
     for item in heating_technologies_ruleset_twitter
-    if (
-        item["tag"] != "nesta_cost_estimator_tool" and not item["value"].startswith("#")
-    )
+    if (item["tag"] not in ["nesta_cost_estimator_tool", "general_boilers"])
+]
+heating_technologies_ruleset_guardian = [
+    {"value": re.sub(" -", " AND NOT", item["value"]), "tag": item["tag"]}
+    for item in heating_technologies_ruleset_guardian
 ]
 heating_technologies_ruleset_guardian.append(
     {
