@@ -1,0 +1,10 @@
+# bucket info
+S3_BUCKET: "asf-online-data-exploration"
+# data collection folders
+THE_GUARDIAN_S3_DATA_COLLECTION_FOLDER: "inputs/data_collection/the_guardian/"
+RECENT_SEARCH_TWITTER_S3_DATA_COLLECTION_FOLDER: "inputs/data_collection/recent_search_twitter/"
+# test folders
+THE_GUARDIAN_S3_TEST_DATA_COLLECTION_FOLDER: "inputs/data_collection/the_guardian/test/"
+THE_GUARDIAN_LOCAL_TEST_DATA_COLLECTION_FOLDER: "data_collection/the_guardian/test/"
+RECENT_SEARCH_TWITTER_S3_TEST_DATA_COLLECTION_FOLDER: "inputs/data_collection/recent_search_twitter/test/"
+RECENT_SEARCH_TWITTER_LOCAL_TEST_DATA_COLLECTION_FOLDER: "data_collection/recent_search_twitter/test/"
