@@ -120,7 +120,7 @@ query_parameters_twitter = {
 heating_technologies_ruleset_guardian = [
     {"value": re.sub(" OR #[a-z0-9]+", "", item["value"]), "tag": item["tag"]}
     for item in heating_technologies_ruleset_twitter
-    if (item["tag"] not in ["nesta_cost_estimator_tool", "general_boilers"])
+    if item["tag"] != "nesta_cost_estimator_tool"
 ]
 heating_technologies_ruleset_guardian = [
     {"value": re.sub(" -", " AND NOT", item["value"]), "tag": item["tag"]}
